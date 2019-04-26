@@ -25,6 +25,10 @@ For each caught ball gain 1 reward point.
 ## Demo
 **Note:** agent in demo acts randomly
 
-<img src="ttps://github.com/piaxar/gym-catcher/blob/master/demo/demo.gif" width="200" height="232">
+<p align="center">
+  <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/demo.gif" width="300" height="350">
+</p>
+
+
 
 
