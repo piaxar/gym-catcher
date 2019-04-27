@@ -36,14 +36,17 @@ For training purposes, number of steps is limited to 100. After this value, envi
 ## Demo
 ### Random agent action
 Agents samples random action from action space and apply it.
+
 <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/random_action.gif" alt="Random action" width="300" height="350">
 
 ### Trained agent action
 Agent trained, using [Sallimans et al.][1] algorithm.
+
 <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/trained.gif" alt="Trained agent" width="300" height="350">
 
 ### Trained agent action in hard setting
 The same trained agent but with changes in balls generation. Now balls are generated in a way, that agent should select one of the falling objects in order to gain score.
+
 <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/trained_hard.gif" alt="Trained agent in hard environment" width="300" height="350">
 
 <!--References-->
