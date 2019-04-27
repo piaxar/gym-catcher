@@ -36,4 +36,10 @@ For training purposes, number of steps is limited to 100. After this value, envi
 ## Demo
 **Note:** agent in demo acts randomly
 
-![Demo](https://github.com/piaxar/gym-catcher/blob/master/demo/demo.gif)
+<p align="center">
+  <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/demo.gif" width="300" height="350">
+</p>
+
+
+
+
