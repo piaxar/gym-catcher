@@ -1,11 +1,11 @@
 import gym
 import numpy as np
-from gym import error, spaces, utils
-from gym.utils import seeding
+from gym import spaces
 from gym.envs.classic_control import rendering
 import time
 import math
 
+# screen parameters
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 700
 
@@ -17,30 +17,30 @@ CART_MOVING_SPEED = 50
 N_SENSORS = 7
 VISION_ANGLE = 45.
 
-
 # falling balls parameters
 BALL_RADIUS = 25.0
-FREQUENCY = 5  # new ball creates every 5 steps
-MAX_BALLS = 10
+FREQUENCY = 5  # new ball creates every FREQUENCY steps
+MAX_BALLS = 10  # maximum number of ball on screen in parallel
 
 BALL_MAX_HORIZONTAL_SPEED = 5
 BALL_MAX_VERTICAL_SPEED = 49
 BALL_MIN_VERTICAL_SPEED = 30
 
-
-G_CONST = 9.8
-G_HALF = 4.9 / 3
+MAX_STEPS = 100  # number of steps, after which environment returns  done=True
 
 
 class CatcherEnv(gym.Env):
     """
 
-    Actions: Discrete(3)
+    Actions: Discrete(2)
     Num      Action
     0        move left
-    1        stay
-    2        move right
+    1        move right
 
+    Observations: Box(1 + N_SENSORS)
+    Num             Meaning
+    0               position of cart on the screen in range [-2.4; 2.4]
+    1-N_SENSORS     discrete value for each sensor. 1 if sensor sees an object, 0 otherwise
 
     """
     metadata = {'render.modes': ['human']}
@@ -50,19 +50,23 @@ class CatcherEnv(gym.Env):
         self.x_threshold = 2.4
         world_width = self.x_threshold * 2
         self.scale = SCREEN_WIDTH / world_width
-        self.step_size = CART_MOVING_SPEED / (self.scale * 2) # moves half of it's width per action
+        self.step_size = CART_MOVING_SPEED / (self.scale * 2)  # moves half of it's width per action
 
-        self.action_space = spaces.Discrete(3)
-        self.observation_space = spaces.Dict({'sensors': spaces.MultiBinary(N_SENSORS),
-                                              'position': spaces.Box(low=-np.array([self.x_threshold]),
-                                                                     high=np.array([self.x_threshold]))})
+        self.action_space = spaces.Discrete(2)
+
+        # 0 elem: position
+        # 1 -> N_SENSORS: sensors
+        min_arr = np.append([-self.x_threshold], np.zeros(N_SENSORS))
+        max_arr = np.append([self.x_threshold], np.ones(N_SENSORS))
+        self.observation_space = spaces.Box(low=min_arr, high=max_arr)
+
         self.viewer = None
         self.position = None
         self.clock = None
         self.balls = None
         self.sensors = None
         self.not_rendered_balls = None  # balls that not yet added to rendering view
-        self.balls_to_remove = None       # balls that fell or being cached, so need to be deleted
+        self.balls_to_remove = None  # balls that fell or being cached, so need to be deleted
 
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
@@ -75,8 +79,7 @@ class CatcherEnv(gym.Env):
             horizontal_speed = np.random.uniform(-BALL_MAX_HORIZONTAL_SPEED, BALL_MAX_HORIZONTAL_SPEED)
 
             speed_vector = (horizontal_speed, vertical_speed)
-            init_x = np.random.uniform(-(SCREEN_WIDTH/3), (SCREEN_WIDTH/3)) + SCREEN_WIDTH / 2
-
+            init_x = np.random.uniform(-(SCREEN_WIDTH / 3), (SCREEN_WIDTH / 3)) + SCREEN_WIDTH / 2
             new_ball = FallingBall(BALL_RADIUS, speed_vector, SCREEN_HEIGHT, SCREEN_WIDTH, init_x=init_x)
             self.balls.append(new_ball)
             self.not_rendered_balls.append(new_ball)
@@ -85,7 +88,8 @@ class CatcherEnv(gym.Env):
         for ball in self.balls:
             ball.fall()
 
-        direction = int(action) - 1
+        direction = -1 if action == 0 else 1
+
         self.position += direction * self.step_size
         # don't allow moving outside the space
         if self.position > self.x_threshold: self.position = self.x_threshold
@@ -106,15 +110,14 @@ class CatcherEnv(gym.Env):
         self.balls = new_balls
 
         sensor_observations = self.get_sensors_observations()
-
-        return {'position': self.position, 'sensors': sensor_observations}, reward, False, None
+        return np.append(self.position, sensor_observations), reward, self.clock > MAX_STEPS, None
 
     def get_sensors_observations(self):
         activations = []
         start_x = self.position * self.scale + SCREEN_WIDTH / 2.0
-        start_y = CART_HEIGHT/2
+        start_y = CART_HEIGHT / 2
         for sensor in self.sensors:
-            activations.append(sensor.is_activated((start_x, start_y),self.balls))
+            activations.append(sensor.is_activated((start_x, start_y), self.balls))
         return np.array(list(reversed(activations)))
 
     def reset(self):
@@ -124,15 +127,16 @@ class CatcherEnv(gym.Env):
         self.not_rendered_balls = []
         self.balls_to_remove = []
         self.sensors = []
+        self.viewer = None
 
         # init sensors:
         angle_step = float(VISION_ANGLE) / (N_SENSORS - 1)
         for i in range(0, N_SENSORS):
-            relative_angle = 90 - (VISION_ANGLE/2) + angle_step * i
+            relative_angle = 90 - (VISION_ANGLE / 2) + angle_step * i
             self.sensors.append(Sensor(relative_angle, SCREEN_HEIGHT))
 
         sensor_observations = self.get_sensors_observations()
-        return {'position': self.position, 'sensors': sensor_observations}
+        return np.append(self.position, sensor_observations)
 
     def render(self, mode='human'):
         if self.viewer is None:
@@ -213,7 +217,7 @@ class Sensor:
 
         a = p_y - q_y
         b = q_x - p_x
-        c = -a * p_x - b*p_y
+        c = -a * p_x - b * p_y
 
         for ball in balls:
             x = ball.x
@@ -232,7 +236,7 @@ class Sensor:
                 math.sqrt(a * a + b * b))
 
         if radius >= dist:
-            return True   # collision
+            return True  # collision
         else:
             return False  # no collision
 
@@ -295,8 +299,3 @@ class FallingBall:
         elif np.abs(cart_position - self.x) <= CART_WIDTH / 2 + self.radius:
             return True
         return False
-
-
-
-
-
