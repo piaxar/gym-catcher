@@ -68,6 +68,13 @@ class CatcherEnv(gym.Env):
         self.not_rendered_balls = None  # balls that not yet added to rendering view
         self.balls_to_remove = None  # balls that fell or being cached, so need to be deleted
 
+        # init sensors:
+        self.sensors = []
+        angle_step = float(VISION_ANGLE) / (N_SENSORS - 1)
+        for i in range(0, N_SENSORS):
+            relative_angle = 90 - (VISION_ANGLE / 2) + angle_step * i
+            self.sensors.append(Sensor(relative_angle, SCREEN_HEIGHT))
+
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         self.clock += 1
@@ -123,17 +130,16 @@ class CatcherEnv(gym.Env):
     def reset(self):
         self.position = 0
         self.clock = 0
+
+        # remove rendered balls
+        if self.balls is not None:
+            for ball in self.balls:
+                geom = ball.get_geom_obj()
+                self.viewer.geoms.remove(geom)
+
         self.balls = []
         self.not_rendered_balls = []
         self.balls_to_remove = []
-        self.sensors = []
-        self.viewer = None
-
-        # init sensors:
-        angle_step = float(VISION_ANGLE) / (N_SENSORS - 1)
-        for i in range(0, N_SENSORS):
-            relative_angle = 90 - (VISION_ANGLE / 2) + angle_step * i
-            self.sensors.append(Sensor(relative_angle, SCREEN_HEIGHT))
 
         sensor_observations = self.get_sensors_observations()
         return np.append(self.position, sensor_observations)
