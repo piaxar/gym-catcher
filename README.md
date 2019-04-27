@@ -34,12 +34,17 @@ For each caught ball gain 1 reward point.
 For training purposes, number of steps is limited to 100. After this value, environment returns True in 'done'.
 
 ## Demo
-**Note:** agent in demo acts randomly
-
 <p align="center">
-  <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/demo.gif" width="300" height="350">
+  <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/random_action.gif" alt="Random action" width="300" height="350">
+  <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/trained.gif" alt="Trained agent" width="300" height="350">
+  <img src="https://github.com/piaxar/gym-catcher/blob/master/demo/trained_hard.gif" alt="Trained agent in hard environment" width="300" height="350">
 </p>
 
+### Random agent action
 
+### Trained agent action
+
+
+### Trained agent action in hard setting
 
 
